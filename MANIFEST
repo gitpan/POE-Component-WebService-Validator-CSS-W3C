@@ -1,0 +1,12 @@
+Build.PL
+Changes
+MANIFEST
+README
+examples/validator.pl
+lib/POE/Component/WebService/Validator/CSS/W3C.pm
+t/00-load.t
+t/pod-coverage.t
+t/pod.t
+t/01-val.t
+Makefile.PL
+META.yml

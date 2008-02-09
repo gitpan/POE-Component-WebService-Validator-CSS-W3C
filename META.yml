@@ -1,0 +1,30 @@
+---
+name: POE-Component-WebService-Validator-CSS-W3C
+version: 0.01
+author:
+  - 'Zoffix Znet <zoffix@cpan.org>'
+abstract: |-
+  non-blocking access
+  to CSS validator.
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  Carp: 1.04
+  LWP::UserAgent: 2.036
+  POE: 0.9999
+  POE::Filter::Line: 1.192
+  POE::Filter::Reference: 1.2187
+  POE::Wheel::Run: 1.2179
+  URI: 1.35
+  WebService::Validator::CSS::W3C: 0.2
+build_requires:
+  Test::More: 0
+provides:
+  POE::Component::WebService::Validator::CSS::W3C:
+    file: lib/POE/Component/WebService/Validator/CSS/W3C.pm
+    version: 0.01
+generated_by: Module::Build version 0.2808
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
