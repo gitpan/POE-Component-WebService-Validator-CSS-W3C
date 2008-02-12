@@ -3,7 +3,7 @@ package POE::Component::WebService::Validator::CSS::W3C;
 use warnings;
 use strict;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use Carp;
 use URI;
@@ -184,7 +184,7 @@ sub _child_closed {
 
 sub _child_error {
     my ( $kernel, $self ) = @_[ KERNEL, OBJECT ];
-    warn "_child_error called (@_[ARG0..$#_])\n"
+    warn "_child_error called: (@_[ARG0..$#_])\n"
         if $self->{debug};
 
     delete $self->{wheel};
@@ -262,16 +262,15 @@ sub _prepare_results {
     = (
         $val->validate( %{ $req_ref->{params} || {} } ),
         $val->is_valid,
-        $val->errorcount,
+        scalar $val->errorcount,
         [ $val->errors ],
-        $val->warningcount,
+        scalar $val->warningcount,
         [ $val->warnings ],
         $val->validator_uri,
         $val->response,
         $val->request_uri,
         $val->som,
     );
-
     unless ( $req_ref->{result} ) {
         delete $req_ref->{result};
         $req_ref->{request_error} = $req_ref->{http_response}->status_line;

@@ -1,5 +1,9 @@
 Revision history for POE-Component-WebService-Validator-CSS-W3C
 
-0.01    Date/time
+0.02    Mon Feb 11 2008
+        fixed the bug which caused the component
+            to die when failing to access the validator
+
+0.01    Sun Feb 10 2008
         First version, released on an unsuspecting world.
 

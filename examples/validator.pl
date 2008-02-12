@@ -11,9 +11,7 @@ my $URI_to_validate = shift;
 use lib '../lib';
 use POE qw(Component::WebService::Validator::CSS::W3C);
 
-my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn(
-    debug => 1,
-);
+my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn;
 
 POE::Session->create(
     package_states => [
