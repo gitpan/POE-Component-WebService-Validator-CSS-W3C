@@ -1,40 +1,437 @@
-POE-Component-WebService-Validator-CSS-W3C
+NAME
+    POE::Component::WebService::Validator::CSS::W3C - non-blocking access to
+    CSS validator.
 
-INSTALLATION
+SYNOPSIS
+        use strict;
+        use warnings;
 
-To install this module, run the following commands:
+        use POE qw(Component::WebService::Validator::CSS::W3C);
 
-	perl Build.PL
-	./Build
-	./Build test
-	./Build install
+        my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn;
 
-SUPPORT AND DOCUMENTATION
+        POE::Session->create(
+            package_states => [
+                main => [ qw( _start validated ) ],
+            ],
+        );
+        $poe_kernel->run;
 
-After installing, you can find documentation for this module with the
-perldoc command.
+        sub _start {
+            $poco->validate( {
+                    event => 'validated',
+                    uri => 'http://zoffix.com',
+                }
+            );
+        }
 
-    perldoc POE::Component::WebService::Validator::CSS::W3C
+        sub validated {
+            my $input = $_[ARG0];
 
-You can also look for information at:
+            if ( $input->{request_error} ) {
+                print "Failed to access validator: $input->{request_error}\n";
+            }
+            else {
+                if ( $input->{is_valid} ) {
+                    printf "%s is valid! See %s for proof\n",
+                                @$input{ qw(uri request_uri) };
+                }
+                else {
+                    printf "%s contains %d error(s), see %s\nErrors are:\n",
+                                @$input{ qw(uri num_errors request_uri) };
 
-    RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=POE-Component-WebService-Validator-CSS-W3C
+                    printf "    %s on line %d\n",
+                                @$_{ qw(message line) }
+                        for @{ $input->{errors} };
+                }
+            }
 
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/POE-Component-WebService-Validator-CSS-W3C
+            $poco->shutdown;
+        }
 
-    CPAN Ratings
-        http://cpanratings.perl.org/d/POE-Component-WebService-Validator-CSS-W3C
+    Using the event based interface is also possible.
 
-    Search CPAN
-        http://search.cpan.org/dist/POE-Component-WebService-Validator-CSS-W3C
+DESCRIPTION
+    The module is a non-blocking POE wrapper around
+    WebService::Validator::CSS::W3C which provides access to W3C CSS
+    validator ( <http://jigsaw.w3.org/css-validator/> )
 
+CONSTRUCTOR
+  spawn
+        my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn;
 
-COPYRIGHT AND LICENCE
+        POE::Component::WebService::Validator::CSS::W3C->spawn(
+            alias => 'val'
+        );
 
-Copyright (C) 2008 Zoffix Znet
+    The constructor returns a
+    POE::Component::WebService::Validator::CSS::W3C object, though you don't
+    need to store it anywhere if you set the "alias" argument (see below).
+    Takes a few *optional* arguments which are as follows:
 
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
+   alias
+        POE::Component::WebService::Validator::CSS::W3C->spawn(
+            alias => 'val'
+        );
+
+    Optional. Specifies a POE Session alias for the component.
+
+   ua
+        my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn(
+            ua => LWP::UserAgent->new( timeout => 10 ),
+        );
+
+    Optional. Takes an LWP::UserAgent object which will be used to access
+    W3C validator. If not specified the LWP::UserAgent with its defaults
+    will be used, *with the exception* of "timeout" which will be set to 30
+    seconds.
+
+   val_uri
+        my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn(
+            val_uri => 'http://jigsaw.w3.org/css-validator/validator',
+        );
+
+    Specifies the URI of the CSS validator to access. Defaults to:
+    "http://jigsaw.w3.org/css-validator/validator", however you are strongly
+    encouraged install local validator, see
+    <http://jigsaw.w3.org/css-validator/DOWNLOAD.html> for details.
+
+   options
+        my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn(
+            options => {
+                trace => 1,
+                default => 1,
+            },
+        );
+
+    Optional. A hashref of POE Session options to pass to the component's
+    session. No options are set by default.
+
+  debug
+        my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn(
+            debug => 1
+        );
+
+    When set to a true value turns on output of debug messages. Defaults to:
+    0.
+
+METHODS
+    These are the object-oriented methods of the components.
+
+  validate
+        $poco->validate( {
+                event => 'validated', # mandatory
+                uri   => 'http://zoffix.com', # this or 'string' must be here
+            }
+        );
+
+        $poco->validate( {
+                event    => 'event_to_send_results_to', # mandatory
+                string   => '#foo { display: none; }', # this or 'uri' must be
+                medium   => 'print', # this one and all below is optional
+                profile  => 'css3',
+                warnings => 2,
+                language => 'de',
+                session  => 'other_session_to_get_results',
+                _user    => rand(), # user defined args
+                _any     => 'other',
+            }
+        );
+
+    Takes hashref of options. See "validate" event below for description.
+
+  session_id
+        my $val_session_id = $poco->session_id;
+
+    Takes no arguments. Returns component's session ID.
+
+  shutdown
+        $poco->shutdown;
+
+    Takes no arguments. Shuts down the component.
+
+ACEPTED EVENTS
+  validate
+        $poe_kernel->post( val => validate => {
+                event => 'validated', # mandatory
+                uri   => 'http://zoffix.com', # this or 'string' must be here
+            }
+        );
+
+        $poe_kernel->post( val => validate => {
+                event    => 'event_to_send_results_to', # mandatory
+                string   => '#foo { display: none; }', # this or 'uri' must be
+                medium   => 'print', # this one and all below is optional
+                profile  => 'css3',
+                warnings => 2,
+                language => 'de',
+                session  => 'other_session_to_get_results',
+                _user    => rand(), # user defined args
+                _any     => 'other',
+            }
+        );
+
+    Instructs the component to validate some CSS code, which can be passed
+    either in a form of a scalar or in a form of a URI to the page. Options
+    are passed in a hashref with keys as follows:
+
+   event
+        { event => 'validation_result' }
+
+    Mandatory. An event to send the result to.
+
+   uri
+        { uri => 'http://zoffix.com' }
+
+    Semi-mandatory. Either "uri" or "string" (see below) must be specified.
+    The "uri" key instructs the validator to validate the page specified in
+    the value.
+
+   string
+        { string => '#foo { display: block; }' }
+
+    Semi-mandatory. Either "string" or "uri" (see above) must be specified.
+    The "string" key instructs the validator to validate CSS code specified
+    as the value.
+
+   medium
+        { medium => 'print' }
+
+    Optional. Specifies the media type of CSS to check against. Should be
+    one of "aural", "braille", "embossed", "handheld", "print", "screen",
+    "tty", "tv", and "presentation". A special value "all" can also be
+    specified which means all media types. Defaults to: "undef" which means
+    validator will use its default, which currently is "all".
+
+   profile
+        { profile => 'css3' }
+
+    Specifies the CSS version to check against. Legal values are "css1",
+    "css2", "css21", "css3", "svg", "svgbasic", "svgtiny", "mobile",
+    "atsc-tv", and "tv". A special value "none" can also be used. Defaults
+    to: "undef" which tells the W3C validator to use its default, which
+    currently defaults to "css21".
+
+   warnings
+        { warnings => 2 }
+
+    An integer 0 - 10 that determines how many warning messages you want to
+    get back from the CSS Validator, 0 means no warnings, 10 would give most
+    warnings, but is currently effectively the same as 1. The defaut is
+    undef in which case the CSS Validator determines a default value; this
+    is expected to be as if 2 had been specified. NOTE: there seems to be a
+    discrepancy in WebService::Validator::CSS::W3C documentation and '0'
+    defaults to "Most Important", '1' => 'Normal', '2' => 'All' and value
+    "no", or default is "No warnings". The bug report has been submitted and
+    hopefully this will be resolved soon. Use "warnings" option with caution
+    until this note is removed.
+
+   language
+        { language => 'de' }
+
+    The desired language of the supposedly human-readable messages. The
+    string will passed as an Accept-Language header in the HTTP request. The
+    CSS Validator currently supports "en", "de", "fr", "ja", "nl", "zh", and
+    "zh-cn".
+
+   session
+        { session => $some_other_session_ref }
+
+        { session => 'some_alias' }
+
+        { session => $session->ID }
+
+    Optional. An alternative session alias, reference or ID that the
+    response should be sent to, defaults to sending session.
+
+   user defined
+    Optional. Any keys starting with "_" (underscore) will not affect the
+    component and will be passed back in the result intact.
+
+  shutdown
+        $poe_kernel->post( 'calc' => 'shutdown' );
+
+    Takes no arguments. Tells the component to shut itself down.
+
+OUTPUT
+     $VAR1 = {
+        'result' => 1,
+        'is_valid' => 0,
+        'num_errors' => '1',
+        'errors' => [
+                    $VAR1->{'som'}{'_content'}[2][0][2][0][2][5][2][0][2][1][2][1][4]
+                    ],
+        'uri' => 'google.ca',
+        'request_uri' => bless( do{\(my $o = 'http://jigsaw.w3.org/css-validator/validator?uri=google.ca&output=soap12')}, 'URI::http' ),
+        'refer_to_uri' => bless( do{\(my $o = 'http://jigsaw.w3.org/css-validator/validator?uri=google.ca')}, 'URI::http' ),
+        'http_response' => bless( { blah }, 'HTTP::Response' ),
+        'som' => bless( { blah }, 'SOAP::SOM' ),
+        'val_uri' => 'http://jigsaw.w3.org/css-validator/validator',
+        'num_warnings' => '0',
+        'warnings' => [],
+     };
+
+    The result will be posted to the event and (optional) session specified
+    in the arguments to the "validate" (event or method). The result, in the
+    form of a hashref, will be passed in "ARG0". The keys of that hashref
+    are as follows:
+
+   result
+        { 'result' => 1 }
+
+    Whill contain either a true or false value. The false value will
+    indicate that we failed to access the validator, use "request_error" key
+    (see below) to determine the reason. If the value is true - we
+    successfully accessed the validator (note that it doesn't mean that the
+    code was valid)
+
+   request_error
+        { request_error => '500: Request timed out' }
+
+    If we could not access the validator (i.e. "result" contains a false
+    value) then the "request_error" key will contain the description of the
+    error.
+
+   is_valid
+        { is_valid => 0 }
+
+    Will contain either a true or false value. If contains a true value the
+    CSS code which was validate does not contain errors. If "is_valid" key
+    contains a false value - the CSS code is invalid.
+
+   num_errors
+        { 'num_errors' => '1' }
+
+    Will contain the number of errors found in CSS code which was validated.
+
+   errors
+        printf "%s on line %d\n", @$_{ qw(message line) }
+                    for @{ $_[ARG0]->{errors} };
+
+    This will contain an arrayref of hashrefs which represent errors. The
+    possible error hashref might be:
+
+        ( {
+            context    => 'p',
+            property   => 'color',
+            expression => { start => '', end => 'not-a-color' }
+            errortype  => 'parse-error',
+            message    => 'not-a-color is not a color value',
+            line       => 0,
+        } )
+
+    However, not all the keys will be present at all times.
+
+   uri
+        { 'uri' => 'google.ca' }
+
+    If the "uri" argument was used to the "validate" event/method (as
+    opposed to "string") the "uri" key in the output will contain whatever
+    you've passed to "validate"
+
+   string
+        { 'string' => '#foo { display: block; }' }
+
+    If the "string" argument was used to the "validate" event/method (as
+    opposed to "uri") the "string" key in the output will contain whatever
+    you've passed to "validate"
+
+   request_uri
+        { 'request_uri' => bless( do{\(my $o = 'http://jigsaw.w3.org/css-validator/validator?uri=google.ca&output=soap12')}, 'URI::http' ) }
+
+    Will contain a URI object which was used to access the validator.
+
+   refer_to_uri
+        { 'refer_to_uri' => bless( do{\(my $o = 'http://jigsaw.w3.org/css-validator/validator?uri=google.ca')}, 'URI::http' ), }
+
+    Will contain a URI object which you can use to direct people to the HTML
+    version of the validator output.
+
+   http_response
+        { 'http_response' => bless( { blah }, 'HTTP::Response' ) }
+
+    The "http_response" key will contain an HTTP::Response object obtained
+    during the access to validator. You could perhaps examine it to find out
+    why you failed to access the validator.
+
+   val_uri
+        { 'val_uri' => 'http://jigsaw.w3.org/css-validator/validator' }
+
+    The "val_uri" key will contain a URI of the CSS validator which was used
+    for validaton.
+
+   som
+        { 'som' => bless( { blah }, 'SOAP::SOM' ), }
+
+    The SOAP::SOM object for the successful deserialization, check the
+    "result" key (see above) for a true value before using this object.
+
+   warnings
+        { 'warnings' => [], }
+
+    The "warnings" key will contain an arrayref of warnings found in CSS
+    file (providing the warning level was set appropriately). Note: the docs
+    for WebService::Validator::CSS::W3C read:
+
+        Returns a list with information about the warnings found for the style
+        sheet. This is currently of limited use as it is broken, see
+        http://www.w3.org/Bugs/Public/show_bug.cgi?id=771 for details.
+
+    The validator bug shows as "RESOLVED", however I could not get any
+    warnings from WebService::Validator::CSS::W3C. If you can figure it out
+    drop me a line ;)
+
+   user defined
+        { '_some' => 'other' }
+
+    Any arguments beginning with "_" (underscore) passed into the "validate"
+    event/method will be present intact in the result.
+
+SEE ALSO
+    WebService::Validator::CSS::W3C, POE, LWP::UserAgent
+
+AUTHOR
+    Zoffix Znet, "<zoffix at cpan.org>" ( <http://zoffix.com>,
+    <http://haslayout.net> )
+
+BUGS
+    Please report any bugs or feature requests to
+    "bug-poe-component-webservice-validator-css-w3c at rt.cpan.org", or
+    through the web interface at
+    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=POE-Component-WebService
+    -Validator-CSS-W3C>. I will be notified, and then you'll automatically
+    be notified of progress on your bug as I make changes.
+
+SUPPORT
+    You can find documentation for this module with the perldoc command.
+
+        perldoc POE::Component::WebService::Validator::CSS::W3C
+
+    You can also look for information at:
+
+    *   RT: CPAN's request tracker
+
+        <http://rt.cpan.org/NoAuth/Bugs.html?Dist=POE-Component-WebService-V
+        alidator-CSS-W3C>
+
+    *   AnnoCPAN: Annotated CPAN documentation
+
+        <http://annocpan.org/dist/POE-Component-WebService-Validator-CSS-W3C
+        >
+
+    *   CPAN Ratings
+
+        <http://cpanratings.perl.org/d/POE-Component-WebService-Validator-CS
+        S-W3C>
+
+    *   Search CPAN
+
+        <http://search.cpan.org/dist/POE-Component-WebService-Validator-CSS-
+        W3C>
+
+COPYRIGHT & LICENSE
+    Copyright 2008 Zoffix Znet, all rights reserved.
+
+    This program is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
 

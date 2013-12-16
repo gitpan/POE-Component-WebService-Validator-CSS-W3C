@@ -2,11 +2,14 @@ Build.PL
 Changes
 MANIFEST
 README
+LICENSE
 examples/validator.pl
 lib/POE/Component/WebService/Validator/CSS/W3C.pm
 t/00-load.t
-t/pod-coverage.t
-t/pod.t
 t/01-val.t
+xt/pod-coverage.t
+xt/pod.t
+xt/kwalitee.t
 Makefile.PL
 META.yml
+META.json

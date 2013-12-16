@@ -3,7 +3,7 @@ package POE::Component::WebService::Validator::CSS::W3C;
 use warnings;
 use strict;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use Carp;
 use URI;
@@ -17,7 +17,7 @@ sub spawn {
         if @_ & 1;
 
     my %params = @_;
-    
+
     $params{ lc $_ } = delete $params{ $_ } for keys %params;
 
     delete $params{options}
@@ -30,7 +30,7 @@ sub spawn {
 
         %params,
     );
-    
+
     my $self = bless \%params, $package;
 
     $self->{session_id} = POE::Session->create(
@@ -59,7 +59,7 @@ sub spawn {
 sub _start {
     my ( $kernel, $self ) = @_[ KERNEL, OBJECT ];
     $self->{session_id} = $_[SESSION]->ID();
-    
+
     if ( $self->{alias} ) {
         $kernel->alias_set( $self->{alias} );
     }
@@ -102,10 +102,10 @@ sub validate {
 sub _validate {
     my ( $kernel, $self ) = @_[ KERNEL, OBJECT ];
     my $sender = $_[SENDER]->ID;
-    
+
     return
         if $self->{shutdown};
-        
+
     my $args;
     if ( ref $_[ARG0] eq 'HASH' ) {
         $args = { %{ $_[ARG0] } };
@@ -114,7 +114,7 @@ sub _validate {
         warn "First parameter must be a hashref, trying to adjust...";
         $args = { @_[ARG0 .. $#_] };
     }
-    
+
     $args->{ lc $_ } = delete $args->{ $_ }
         for grep { !/^_/ } keys %{ $args };
 
@@ -144,10 +144,10 @@ sub _validate {
     else {
         $args->{sender} = $sender;
     }
-    
+
     $kernel->refcount_increment( $args->{sender} => __PACKAGE__ );
     $self->{wheel}->put( $args );
-    
+
     undef;
 }
 
@@ -164,14 +164,14 @@ sub _shutdown {
         unless $self->{alias};
 
     $self->{shutdown} = 1;
-    
+
     $self->{wheel}->shutdown_stdin
         if $self->{wheel};
 }
 
 sub _child_closed {
     my ( $kernel, $self ) = @_[ KERNEL, OBJECT ];
-    
+
     warn "_child_closed called (@_[ARG0..$#_])\n"
         if $self->{debug};
 
@@ -204,14 +204,14 @@ sub _child_stderr {
 
 sub _child_stdout {
     my ( $kernel, $self, $input ) = @_[ KERNEL, OBJECT, ARG0 ];
-    
+
     my $session = delete $input->{sender};
     my $event   = delete $input->{event};
     delete $input->{params};
 
     $kernel->post( $session, $event, $input );
     $kernel->refcount_decrement( $session => __PACKAGE__ );
-    
+
     undef;
 }
 
@@ -222,18 +222,18 @@ sub _val_wheel {
         binmode STDIN;
         binmode STDOUT;
     }
-    
+
     my $raw;
     my $size = 4096;
     my $filter = POE::Filter::Reference->new;
-    
+
     while ( sysread STDIN, $raw, $size ) {
         my $requests = $filter->get( [ $raw ] );
         foreach my $req_ref ( @$requests ) {
 
             # changes $req_ref
-            _prepare_results( $req_ref, $val_ua, $val_uri ); 
-            
+            _prepare_results( $req_ref, $val_ua, $val_uri );
+
             my $response = $filter->put( [ $req_ref ] );
             print STDOUT @$response;
         }
@@ -290,6 +290,8 @@ sub _prepare_results {
 1;
 
 __END__
+
+=encoding utf8
 
 =head1 NAME
 
@@ -373,7 +375,7 @@ follows:
         alias => 'val'
     );
 
-B<Optional>. Specifies a POE Session alias for the component. 
+B<Optional>. Specifies a POE Session alias for the component.
 
 =head3 ua
 
@@ -554,9 +556,9 @@ C<zh>, and C<zh-cn>.
 =head3 session
 
     { session => $some_other_session_ref }
-    
+
     { session => 'some_alias' }
-    
+
     { session => $session->ID }
 
 B<Optional>. An alternative session alias, reference or ID that the

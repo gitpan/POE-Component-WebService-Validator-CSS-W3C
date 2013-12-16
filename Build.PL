@@ -20,10 +20,15 @@ my $builder = Module::Build->new(
         'POE::Filter::Reference'          => 1.2187,
         'POE::Filter::Line'               => 1.1920,
         'LWP::UserAgent'                  => 2.036,
+        'perl'                            => '5.006',
     },
+    configure_requires => { 'Module::Build' => 0 },
     add_to_cleanup      => [ 'POE-Component-WebService-Validator-CSS-W3C-*' ],
     create_makefile_pl => 'traditional',
 );
+if ( $ENV{RELEASE_TESTING} ) {
+    system('pod2text lib/POE/Component/WebService/Validator/CSS/W3C.pm > README');
+}
 
 $builder->create_build_script();
 

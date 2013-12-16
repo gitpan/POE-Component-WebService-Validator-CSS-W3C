@@ -8,7 +8,7 @@ die "usage: validator.pl <uri_to_validate>\n"
 
 my $URI_to_validate = shift;
 
-use lib '../lib';
+use lib qw(../lib lib);
 use POE qw(Component::WebService::Validator::CSS::W3C);
 
 my $poco = POE::Component::WebService::Validator::CSS::W3C->spawn;
@@ -43,6 +43,8 @@ sub validated {
             printf "%s contains %d error(s), see %s\nErrors are:\n",
                         @$input{ qw(uri num_errors refer_to_uri) };
 
+                        use Data::Dumper;
+                        print Dumper $input->{errors};
             printf "    %s on line %d\n",
                         @$_{ qw(message line) }
                 for @{ $input->{errors} };
